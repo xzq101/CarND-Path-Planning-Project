@@ -154,4 +154,10 @@ vector<double> getXY(double s, double d, const vector<double> &maps_s,
   return {x,y};
 }
 
+inline void mypause() 
+{ 
+  std::cout<<"Press [Enter] to continue . . .";
+  std::cin.get();
+} 
+
 #endif  // HELPERS_H
