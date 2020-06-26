@@ -51,11 +51,12 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  //start in lane 1
-  int lane=1.0 ;
-  //define initial velocity 
+  //start in lane 1int
+
+  //define velocity limit
  
-  double ref_vel=0  ;//mph 
+    int lane=1.0 ;
+    double ref_vel=0  ;//mph 
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy,&lane,&ref_vel]
@@ -99,7 +100,6 @@ int main() {
        //   std::cout<<sensor_fusion<<std::endl;
       //    mypause() ;
 
-          // Provided previous path point size.
           int prev_size=previous_path_x.size();
       //    std::cout<<"prev_size: "<<prev_size<<std::endl;
      //     mypause() ;
@@ -108,93 +108,54 @@ int main() {
             car_s = end_path_s;
           }
 
-          // Prediction : Analysing other cars positions.
-          bool car_ahead = false;
-          bool car_left = false;
-          bool car_righ = false;   
-          bool car_ahead_60 = false; 
-          bool car_ahead_90 = false; 
-
-          for ( int i = 0; i < sensor_fusion.size(); i++ ) {
-              float d = sensor_fusion[i][6];
-              int car_lane = -1;
-              // is it on the same lane we are
-              if ( d > 0 && d < 4 ) {
-                car_lane = 0;
-              } else if ( d > 4 && d < 8 ) {
-                car_lane = 1;
-              } else if ( d > 8 && d < 12 ) {
-                car_lane = 2;
+          bool too_close=false;
+          for(int i = 0; i < sensor_fusion.size(); i++)
+          {
+            float d = sensor_fusion[i][6];
+          //  std::cout<<i<<" d: "<<d<<std::endl;
+          // find other cars in which lane
+            int car_lane = -1;
+            if ( d > 0 && d < 4 ) {
+              car_lane = 0;
+            } else if ( d > 4 && d < 8 ) {
+              car_lane = 1;
+            } else if ( d > 8 && d < 12 ) {
+              car_lane = 2;
+            }
+            if (car_lane < 0) {
+   //           std::cout<<i<<" car is not in lane."<<std::endl;
+              continue;
+            }
+            // Find car speed.
+            double vx = sensor_fusion[i][3];
+            double vy = sensor_fusion[i][4];
+            double check_speed = sqrt(vx*vx + vy*vy);
+            double check_car_s = sensor_fusion[i][5];
+            // Estimate car s position after executing previous trajectory.
+            check_car_s += ((double)prev_size*0.02*check_speed);
+            if ( car_lane == lane ) {
+              if((check_car_s>car_s) && (check_car_s-car_s)<30){
+                std::cout<<" car is too close. "<<check_car_s-car_s<<std::endl;
+                too_close=true;
+                if(lane>0){
+                  lane=0;
+                }
               }
-              if (car_lane < 0) {
-                continue;
-              }
-              // Find car speed.
-              double vx = sensor_fusion[i][3];
-              double vy = sensor_fusion[i][4];
-              double check_speed = sqrt(vx*vx + vy*vy);
-              double check_car_s = sensor_fusion[i][5];
-              // Estimate car s position after executing previous trajectory.
-              check_car_s += ((double)prev_size*0.02*check_speed);
-
-              if ( car_lane == lane ) {
-                // Car in our lane.
-                car_ahead |= check_car_s > car_s && check_car_s - car_s < 30;
-                car_ahead_60 |= check_car_s > car_s && check_car_s - car_s < 60;
-                car_ahead_90 |= check_car_s > car_s && check_car_s - car_s < 90;
-              } else if ( car_lane - lane == -1 ) {
-                // Car left
-                car_left |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
-              } else if ( car_lane - lane == 1 ) {
-                // Car right
-                car_righ |= car_s - 30 < check_car_s && car_s + 30 > check_car_s;
-              }
-          }
-          std::cout<<lane<<" car_left_ahead_righ "<<car_left<<car_ahead<<car_righ<<" 60 "<<car_ahead_60<<" 90 "<<car_ahead_90<<std::endl;
-          // end prediction
-
-
-          // Behavior planning
-
+            }
 
           //smooth increase and decrease speed
-          if(car_ahead){
-            if ( !car_left && lane > 0 ) {
-              // if there is no car left and there is a left lane.
-              lane--; // Change lane left.
-            } else if ( !car_righ && lane != 2 ){
-              // if there is no car right and there is a right lane.
-              lane++; // Change lane right.
-            } else {
-              std::cout<<" car is slowing down. "<< std::endl;
-              ref_vel -=.0224*10;
-            }
+          if(too_close){
+            std::cout<<" car is slowing down."<<std::endl;
+            ref_vel -=.0224*10;
           }
-          else {
-            if ( lane != 1 ) // if we are not on the center lane.
-            { 
-              if ( ( lane == 0 && !car_righ ) || ( lane == 2 && !car_left ) ) {
-                lane = 1; // Back to center.
-              }
-            }
-            if ( ref_vel < 49.5 ) {
-              ref_vel +=.224;
-            }
+          else if(ref_vel<49.5){
+ //           std::cout<<i<<" car is speeding up."<<std::endl;
+            ref_vel +=.0224;
           }
 
-            //////////////////////
-//             std::cout<<" car is slowing down. "<< std::endl;
-//             ref_vel -=.0224*10;
-//           }
-//           else if(ref_vel<49.5){
-// //           std::cout<<i<<" car is speeding up."<<std::endl;
-//             ref_vel +=.224;
-//           }
 
-
-          // End behavior
-
-          // past points
+          }
+      //    mypause() ;
           vector<double> ptsx;
           vector<double> ptsy;
 
@@ -302,7 +263,6 @@ int main() {
             next_x_vals.push_back(x_point);
             next_y_vals.push_back(y_point);
           }
-
           json msgJson;
         
           //end TODO
