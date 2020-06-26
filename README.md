@@ -1,6 +1,12 @@
 # CarND-Path-Planning-Project
-Self-Driving Car Engineer Nanodegree Program
-   
+
+## Overview
+
+The car is driving by itself in the simulater enviorment.
+
+### Goals
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
 
@@ -9,13 +15,39 @@ To run the simulator on Mac/Linux, first make the binary file executable with th
 sudo chmod u+x {simulator_file_name}
 ```
 
-### Goals
-In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
 #### The map of the highway is in data/highway_map.txt
 Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
 
 The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
+
+## Inplmentation of path planning
+
+The following three component s are implemented to make to car drive by itself.
+
+### Prediction
+
+The senser fusion data from the simulator provided location and speed information for the 11 other cars drive on the track.
+
+The car location and speed information is used to find if there is any car within +-30 meter from the self driving car in the lane it is on, and the neighbering lanes.
+
+The information about the neighbering cars is flagged and will be sent to the planning part of code.
+
+### Behavior planning
+
+The behavior planning part of code use the flag information from prediction code. To determain if the car will: slow down, accelerate or change lane.
+
+### Trajectory generation
+
+The spline function is uded to generate a smooth path based on the information form behavior planning.
+
+5 points are used to generate the spline line:
+
+1. Current location.
+2. One point from previous path.
+3. location at 30 meter away
+4. location at 60 meter away
+5. location at 90 meter away
 
 ## Basic Build Instructions
 
